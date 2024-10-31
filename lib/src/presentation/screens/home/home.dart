@@ -189,12 +189,9 @@ class NavigationTile extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: TweenAnimationBuilder<Color>(
+      child: MyAnimatedColor(
         duration: animationDuration,
-        tween: MyColorTween(
-          begin: !current ? currentColor : color,
-          end: current ? currentColor : color,
-        ),
+        color: current ? currentColor : color,
         builder: (context, value, child) {
           return DecoratedBox(
             decoration: BoxDecoration(

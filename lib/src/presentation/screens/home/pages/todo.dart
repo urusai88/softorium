@@ -79,14 +79,14 @@ class _TodoPageState extends State<TodoPage> {
   Future<void> _addTodo(String value) async {
     _entry?.remove();
     _entry = null;
-    _focusNode.unfocus();
-    _textEditingController.clear();
-    setState(() => _editMode = false);
     value = value.trim();
     if (value.isNotEmpty) {
       final todo = await database.addTodo(value);
       setState(() => _todos[_formatKey(_selected)]!.add(todo));
     }
+    setState(() => _editMode = false);
+    _focusNode.unfocus();
+    _textEditingController.clear();
   }
 
   Future<void> _deleteTodo(TodoItem todo) async {
@@ -331,12 +331,9 @@ class _TodoListTileState extends State<TodoListTile> {
       behavior: HitTestBehavior.opaque,
       onLongPress: widget.onLongPress,
       onTap: widget.onTap,
-      child: TweenAnimationBuilder<Color?>(
+      child: MyAnimatedColor(
         duration: animationDuration,
-        tween: MyColorTween(
-          begin: !widget.selected ? const Color(0x33BEB7EB) : Colors.white,
-          end: widget.selected ? const Color(0x33BEB7EB) : Colors.white,
-        ),
+        color: widget.selected ? const Color(0x33BEB7EB) : Colors.white,
         builder: (context, value, child) {
           return Container(
             height: 41,
@@ -463,12 +460,9 @@ class DatesCarousel extends StatelessWidget {
             child: Container(
               margin: const EdgeInsets.all(12),
               width: 40,
-              child: TweenAnimationBuilder<Color>(
+              child: MyAnimatedColor(
                 duration: animationDuration,
-                tween: MyColorTween(
-                  begin: !isSelected ? _backColorS : _backColor,
-                  end: isSelected ? _backColorS : _backColor,
-                ),
+                color: isSelected ? _backColorS : _backColor,
                 builder: (context, value, child) {
                   return DecoratedBox(
                     decoration: BoxDecoration(
