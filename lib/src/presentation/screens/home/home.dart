@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
 import '../../constants.dart';
-import '../../widgets/my_color_tween.dart';
+import '../../widgets.dart';
 import 'pages/placeholder.dart';
 import 'pages/todo.dart';
 

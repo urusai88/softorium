@@ -8,8 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../../infrastructure/database.dart';
 import '../../../constants.dart';
 import '../../../functions.dart';
-import '../../../widgets/conditionally_absorb_pointer.dart';
-import '../../../widgets/my_color_tween.dart';
+import '../../../widgets.dart';
 
 const _dayColor = Colors.black;
 const _dayColorS = Colors.white;
