@@ -1,0 +1,33 @@
+name: todo
+description: Todo list
+publish_to: none
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  gap: ^3.0.0
+  google_fonts: ^6.2.0
+  infinite_listview: ^1.1.0
+  intl: ^0.19.0
+  drift: ^2.21.0
+  drift_flutter: ^0.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.13
+
+  drift_dev: ^2.21.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
+    - assets/icons/
