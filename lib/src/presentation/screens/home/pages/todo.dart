@@ -104,7 +104,10 @@ class _TodoPageState extends State<TodoPage> {
   }
 
   void _onBeginEdit() {
-    setState(() => _editMode = true);
+    setState(() {
+      _editMode = true;
+      _selectedTodoId = null;
+    });
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _focusNode.requestFocus(),
     );
@@ -185,9 +188,23 @@ class _TodoPageState extends State<TodoPage> {
                                     contents: todo.description,
                                     completed: todo.completed,
                                     selected: _selectedTodoId == todo.id,
-                                    onTap: () => setState(
-                                      () => _selectedTodoId = todo.id,
-                                    ),
+                                    onTap: () {
+                                      if (_editMode) {
+                                        unawaited(
+                                          _addTodo(_textEditingController.text),
+                                        );
+                                      } else {
+                                        setState(
+                                          () {
+                                            if (_selectedTodoId == todo.id) {
+                                              _selectedTodoId = null;
+                                            } else {
+                                              _selectedTodoId = todo.id;
+                                            }
+                                          },
+                                        );
+                                      }
+                                    },
                                     onLongPress: () async =>
                                         _setCompleted(todo),
                                     onDelete: () =>
