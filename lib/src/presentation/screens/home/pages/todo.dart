@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:infinite_listview/infinite_listview.dart';
@@ -266,12 +267,9 @@ class TodoListTileOverlay extends StatelessWidget {
           return false;
         }
         final rect = renderBox.localToGlobal(Offset.zero) & renderBox.size;
-        if (rect.contains(position)) {
-          return false;
-        }
-        onTapOutside();
-        return true;
+        return !rect.contains(position);
       },
+      onAbsorbed: onTapOutside,
     );
   }
 }
@@ -474,7 +472,7 @@ class DatesCarousel extends StatelessWidget {
           return GestureDetector(
             onTap: () => onSelectedChanged(date),
             child: Container(
-              margin: const EdgeInsets.all(12),
+              margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
               width: 40,
               child: MyAnimatedColor(
                 duration: animationDuration,
