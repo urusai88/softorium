@@ -2,23 +2,55 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-typedef ConditionallyAbsorbPointerCallback = bool Function(Offset position);
+// ignore_for_file: avoid_setters_without_getters
+
+typedef AbsorbingCallback = bool Function(Offset position);
 
 class ConditionallyAbsorbPointer extends SingleChildRenderObjectWidget {
   const ConditionallyAbsorbPointer({
     super.key,
-    required this.callback,
-    required this.onAbsorbed,
+    required this.absorbingCallback,
+    this.onTapDown,
+    this.onTapUp,
+    this.onTap,
+    this.onTapCancel,
+    this.onSecondaryTapDown,
+    this.onSecondaryTapUp,
+    this.onSecondaryTap,
+    this.onSecondaryTapCancel,
+    this.onTertiaryTapDown,
+    this.onTertiaryTapUp,
+    this.onTertiaryTapCancel,
   });
 
-  final ConditionallyAbsorbPointerCallback callback;
-  final VoidCallback onAbsorbed;
+  final AbsorbingCallback absorbingCallback;
+  final GestureTapDownCallback? onTapDown;
+  final GestureTapUpCallback? onTapUp;
+  final GestureTapCallback? onTap;
+  final GestureTapCancelCallback? onTapCancel;
+  final GestureTapCallback? onSecondaryTap;
+  final GestureTapDownCallback? onSecondaryTapDown;
+  final GestureTapUpCallback? onSecondaryTapUp;
+  final GestureTapCancelCallback? onSecondaryTapCancel;
+  final GestureTapDownCallback? onTertiaryTapDown;
+  final GestureTapUpCallback? onTertiaryTapUp;
+  final GestureTapCancelCallback? onTertiaryTapCancel;
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
       RenderConditionallyAbsorbPointer(
-        callback: callback,
-        onAbsorbed: onAbsorbed,
+        callback: absorbingCallback,
+        onTapDown: onTapDown,
+        onTapUp: onTapUp,
+        onTap: onTap,
+        onTapCancel: onTapCancel,
+        onSecondaryTapDown: onSecondaryTapDown,
+        onSecondaryTapUp: onSecondaryTapUp,
+        onSecondaryTap: onSecondaryTap,
+        onSecondaryTapCancel: onSecondaryTapCancel,
+        onTertiaryTapDown: onTertiaryTapDown,
+        onTertiaryTapUp: onTertiaryTapUp,
+        onTertiaryTapCancel: onTertiaryTapCancel,
       );
 
   @override
@@ -27,42 +59,84 @@ class ConditionallyAbsorbPointer extends SingleChildRenderObjectWidget {
     RenderConditionallyAbsorbPointer renderObject,
   ) =>
       renderObject
-        ..callback = callback
-        ..onAbsorbed = onAbsorbed;
+        ..callback = absorbingCallback
+        ..onTapDown = onTapDown
+        ..onTapUp = onTapUp
+        ..onTap = onTap
+        ..onTapCancel = onTapCancel
+        ..onSecondaryTapDown = onSecondaryTapDown
+        ..onSecondaryTapUp = onSecondaryTapUp
+        ..onSecondaryTap = onSecondaryTap
+        ..onSecondaryTapCancel = onSecondaryTapCancel
+        ..onTertiaryTapDown = onTertiaryTapDown
+        ..onTertiaryTapUp = onTertiaryTapUp
+        ..onTertiaryTapCancel = onTertiaryTapCancel;
 }
 
 class RenderConditionallyAbsorbPointer
     extends RenderProxyBoxWithHitTestBehavior {
   RenderConditionallyAbsorbPointer({
-    RenderBox? child,
-    required ConditionallyAbsorbPointerCallback callback,
-    required VoidCallback onAbsorbed,
-  })  : _callback = callback,
-        _onAbsorbed = onAbsorbed,
-        super(behavior: HitTestBehavior.translucent) {
-    _recognizer.onTap = _onAbsorbed;
+    super.child,
+    required this.callback,
+    GestureTapDownCallback? onTapDown,
+    GestureTapUpCallback? onTapUp,
+    GestureTapCallback? onTap,
+    GestureTapCancelCallback? onTapCancel,
+    GestureTapDownCallback? onSecondaryTapDown,
+    GestureTapUpCallback? onSecondaryTapUp,
+    GestureTapCallback? onSecondaryTap,
+    GestureTapCancelCallback? onSecondaryTapCancel,
+    GestureTapDownCallback? onTertiaryTapDown,
+    GestureTapUpCallback? onTertiaryTapUp,
+    GestureTapCancelCallback? onTertiaryTapCancel,
+  }) : super(behavior: HitTestBehavior.opaque) {
+    _recognizer = TapGestureRecognizer(debugOwner: this)
+      ..onTapDown = onTapDown
+      ..onTapUp = onTapUp
+      ..onTap = onTap
+      ..onTapCancel = onTapCancel
+      ..onSecondaryTap = onSecondaryTap
+      ..onSecondaryTapDown = onSecondaryTapDown
+      ..onSecondaryTapUp = onSecondaryTapUp
+      ..onSecondaryTapCancel = onSecondaryTapCancel
+      ..onTertiaryTapDown = onTertiaryTapDown
+      ..onTertiaryTapUp = onTertiaryTapUp
+      ..onTertiaryTapCancel = onTertiaryTapCancel;
   }
 
-  late final _recognizer = TapGestureRecognizer(debugOwner: this);
+  late final TapGestureRecognizer _recognizer;
 
-  ConditionallyAbsorbPointerCallback get callback => _callback;
-  ConditionallyAbsorbPointerCallback _callback;
+  AbsorbingCallback callback;
 
-  set callback(ConditionallyAbsorbPointerCallback value) {
-    if (value != _callback) {
-      _callback = value;
-    }
-  }
+  set onTapDown(GestureTapDownCallback? value) => _recognizer.onTapDown = value;
 
-  VoidCallback get onAbsorbed => _onAbsorbed;
-  VoidCallback _onAbsorbed;
+  set onTapUp(GestureTapUpCallback? value) => _recognizer.onTapUp = value;
 
-  set onAbsorbed(VoidCallback value) {
-    if (value != _onAbsorbed) {
-      _onAbsorbed = value;
-      _recognizer.onTap = _onAbsorbed;
-    }
-  }
+  set onTap(GestureTapCallback? value) => _recognizer.onTap = value;
+
+  set onTapCancel(GestureTapCancelCallback? value) =>
+      _recognizer.onTapCancel = value;
+
+  set onSecondaryTapDown(GestureTapDownCallback? value) =>
+      _recognizer.onSecondaryTapDown = value;
+
+  set onSecondaryTapUp(GestureTapUpCallback? value) =>
+      _recognizer.onSecondaryTapUp = value;
+
+  set onSecondaryTap(GestureTapCallback? value) =>
+      _recognizer.onSecondaryTap = value;
+
+  set onSecondaryTapCancel(GestureTapCancelCallback? value) =>
+      _recognizer.onSecondaryTapCancel = value;
+
+  set onTertiaryTapDown(GestureTapDownCallback? value) =>
+      _recognizer.onTertiaryTapDown = value;
+
+  set onTertiaryTapUp(GestureTapUpCallback? value) =>
+      _recognizer.onTertiaryTapUp = value;
+
+  set onTertiaryTapCancel(GestureTapCancelCallback? value) =>
+      _recognizer.onTertiaryTapCancel = value;
 
   @override
   Size computeSizeForNoChild(BoxConstraints constraints) => constraints.biggest;
@@ -73,7 +147,6 @@ class RenderConditionallyAbsorbPointer
       _recognizer.addPointer(event);
       _recognizer.handleEvent(event);
     }
-
     super.handleEvent(event, entry);
   }
 

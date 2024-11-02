@@ -114,7 +114,7 @@ class _TodoPageState extends State<TodoPage> {
     );
     _entry = OverlayEntry(
       builder: (_) => TodoListTileOverlay(
-        pointerKey: _pointerKey,
+        allowGestureKey: _pointerKey,
         onTapOutside: () => unawaited(_addTodo(_textEditingController.text)),
       ),
     );
@@ -250,26 +250,31 @@ class _TodoPageState extends State<TodoPage> {
 class TodoListTileOverlay extends StatelessWidget {
   const TodoListTileOverlay({
     super.key,
-    required this.pointerKey,
+    required this.allowGestureKey,
     required this.onTapOutside,
   });
 
-  final GlobalKey pointerKey;
+  /// Элемент, на который допускается нажатие
+  final GlobalKey allowGestureKey;
   final VoidCallback onTapOutside;
 
   @override
   Widget build(BuildContext context) {
     return ConditionallyAbsorbPointer(
-      callback: (position) {
+      absorbingCallback: (position) {
         final renderBox =
-            pointerKey.currentContext?.findRenderObject() as RenderBox?;
+            allowGestureKey.currentContext?.findRenderObject() as RenderBox?;
         if (renderBox == null) {
           return false;
         }
-        final rect = renderBox.localToGlobal(Offset.zero) & renderBox.size;
-        return !rect.contains(position);
+        final elementRect =
+            renderBox.localToGlobal(Offset.zero) & renderBox.size;
+        if (elementRect.contains(position)) {
+          return false;
+        }
+        return true;
       },
-      onAbsorbed: onTapOutside,
+      onTap: onTapOutside,
     );
   }
 }
