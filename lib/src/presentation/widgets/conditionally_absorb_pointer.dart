@@ -90,7 +90,7 @@ class RenderConditionallyAbsorbPointer
     GestureTapUpCallback? onTertiaryTapUp,
     GestureTapCancelCallback? onTertiaryTapCancel,
   }) : super(behavior: HitTestBehavior.opaque) {
-    _recognizer = TapGestureRecognizer(debugOwner: this)
+    _recognizer
       ..onTapDown = onTapDown
       ..onTapUp = onTapUp
       ..onTap = onTap
@@ -104,7 +104,8 @@ class RenderConditionallyAbsorbPointer
       ..onTertiaryTapCancel = onTertiaryTapCancel;
   }
 
-  late final TapGestureRecognizer _recognizer;
+  late final TapGestureRecognizer _recognizer =
+      TapGestureRecognizer(debugOwner: this);
 
   AbsorbingCallback callback;
 
@@ -152,10 +153,7 @@ class RenderConditionallyAbsorbPointer
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (!size.contains(position)) {
-      return false;
-    }
-    if (callback(position)) {
+    if (size.contains(position) && callback(position)) {
       result.add(BoxHitTestEntry(this, position));
       return true;
     }

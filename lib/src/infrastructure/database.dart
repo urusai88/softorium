@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/widgets.dart' show BuildContext;
+import 'package:intl/intl.dart';
 
 import '../../main.dart';
 
@@ -20,7 +21,7 @@ class TodoItems extends Table {
 class MyDatabase extends _$MyDatabase {
   MyDatabase() : super(_openConnection());
 
-  static MyDatabase of(BuildContext context) =>
+  factory MyDatabase.of(BuildContext context) =>
       context.findAncestorWidgetOfExactType<MyApp>()!.database;
 
   @override
@@ -30,27 +31,16 @@ class MyDatabase extends _$MyDatabase {
 
   Future<List<TodoItem>> todosInDay(DateTime dateTime) {
     return (select(todoItems)
-          ..where(
-            (t) =>
-                t.createdTime.year.equals(dateTime.year) &
-                t.createdTime.month.equals(dateTime.month) &
-                t.createdTime.day.equals(dateTime.day),
-          ))
+          ..where((t) => t.createdTime.date
+              .equals(DateFormat('yyyy-MM-dd').format(dateTime))))
         .get();
   }
 
   Future<TodoItem> addTodo(String description) =>
-      managers.todoItems.createReturning(
-        (c) => c(
-          description: description,
-          completed: const Value(false),
-          createdTime: Value(DateTime.now()),
-        ),
-      );
+      managers.todoItems.createReturning((c) => c(description: description));
 
-  Future<void> deleteTodo(TodoItem todo) {
-    return managers.todoItems.filter((f) => f.id.equals(todo.id)).delete();
-  }
+  Future<void> deleteTodo(TodoItem todo) =>
+      managers.todoItems.filter((f) => f.id.equals(todo.id)).delete();
 
   Future<void> updateTodo(TodoItem todo) {
     return managers.todoItems

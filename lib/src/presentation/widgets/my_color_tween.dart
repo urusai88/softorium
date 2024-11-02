@@ -38,13 +38,13 @@ class MyAnimatedColor extends StatefulWidget {
     required this.duration,
     required this.color,
     required this.builder,
-    required this.child,
+    this.child,
   });
 
   final Duration duration;
   final Color color;
   final ValueWidgetBuilder<Color> builder;
-  final Widget child;
+  final Widget? child;
 
   @override
   State<MyAnimatedColor> createState() => _MyAnimatedColorState();
@@ -62,6 +62,8 @@ class _MyAnimatedColorState extends State<MyAnimatedColor>
     end: widget.color,
   );
 
+  Color get _currentColor => _colorTween.evaluate(_controller);
+
   @override
   void dispose() {
     _controller.dispose();
@@ -73,11 +75,9 @@ class _MyAnimatedColorState extends State<MyAnimatedColor>
     super.didUpdateWidget(oldWidget);
     _controller.duration = widget.duration;
     if (widget.color != oldWidget.color) {
-      _colorTween.begin = _colorTween.evaluate(_controller);
+      _colorTween.begin = _currentColor;
       _colorTween.end = widget.color;
-      _controller.stop();
-      _controller.reset();
-      _controller.forward();
+      _controller.forward(from: _controller.lowerBound);
     }
   }
 
@@ -86,7 +86,7 @@ class _MyAnimatedColorState extends State<MyAnimatedColor>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) =>
-          widget.builder(context, _colorTween.evaluate(_controller), child),
+          widget.builder(context, _currentColor, child),
       child: widget.child,
     );
   }
