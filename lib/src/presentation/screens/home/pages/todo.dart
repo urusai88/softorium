@@ -1,12 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:infinite_listview/infinite_listview.dart';
 import 'package:intl/intl.dart';
+import 'package:isar/isar.dart';
 
-import '../../../../infrastructure/database.dart';
+import '../../../../../main.dart';
+import '../../../../data.dart';
 import '../../../constants.dart';
 import '../../../functions.dart';
 import '../../../widgets.dart';
@@ -44,7 +45,7 @@ class _TodoPageState extends State<TodoPage> {
 
   late DateTime _selected;
 
-  final _todos = <String, List<TodoItem>>{};
+  final _todos = <String, List<Todo>>{};
   final _loadings = <String>[];
 
   final _pointerKey = GlobalKey();
@@ -55,7 +56,7 @@ class _TodoPageState extends State<TodoPage> {
 
   OverlayEntry? _entry;
 
-  MyDatabase get database => MyDatabase.of(context);
+  Isar get isar => context.findAncestorWidgetOfExactType<MyApp>()!.isar;
 
   @override
   void initState() {
@@ -69,7 +70,10 @@ class _TodoPageState extends State<TodoPage> {
     if (_todos.containsKey(key) || _loadings.contains(key)) {
       return;
     }
-    final todos = await database.todosInDay(dateTime);
+    final todos = await isar.todos
+        .where()
+        .createdDateEqualTo(DateFormat('yyyy-MM-dd').format(dateTime))
+        .findAll();
     setState(() {
       _loadings.remove(key);
       _todos[key] = todos;
@@ -81,7 +85,8 @@ class _TodoPageState extends State<TodoPage> {
     _entry = null;
     value = value.trim();
     if (value.isNotEmpty) {
-      final todo = await database.addTodo(value);
+      final todo = Todo.create(description: value);
+      await isar.writeTxn(() => isar.todos.put(todo));
       setState(() => _todos[_formatKey(_selected)]!.add(todo));
     }
     setState(() => _editMode = false);
@@ -89,19 +94,15 @@ class _TodoPageState extends State<TodoPage> {
     _textEditingController.clear();
   }
 
-  Future<void> _deleteTodo(TodoItem todo) async {
+  Future<void> _deleteTodo(Todo todo) async {
     final key = _formatKey(_selected);
-    await database.deleteTodo(todo);
+    await isar.writeTxn(() => isar.todos.delete(todo.id));
     setState(() => _todos[key]!.remove(todo));
   }
 
-  Future<void> _setCompleted(TodoItem item) async {
-    final updated = item.copyWith(completed: true);
-    await database.updateTodo(updated);
-    setState(() {
-      final i = _todos[_formatKey(_selected)]!.indexOf(item);
-      _todos[_formatKey(_selected)]![i] = updated;
-    });
+  Future<void> _setCompleted(Todo item) async {
+    setState(() => item.completed = true);
+    await isar.writeTxn(() => isar.todos.put(item));
   }
 
   void _onBeginEdit() {
@@ -109,12 +110,11 @@ class _TodoPageState extends State<TodoPage> {
       _editMode = true;
       _selectedTodoId = null;
     });
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _focusNode.requestFocus(),
-    );
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _focusNode.requestFocus());
     _entry = OverlayEntry(
-      builder: (_) => TodoListTileOverlay(
-        allowGestureKey: _pointerKey,
+      builder: (_) => TapOutsideOverlay(
+        keys: [_pointerKey],
         onTapOutside: () => unawaited(_addTodo(_textEditingController.text)),
       ),
     );
@@ -243,38 +243,6 @@ class _TodoPageState extends State<TodoPage> {
         alignment: Alignment.topCenter,
         child: result,
       ),
-    );
-  }
-}
-
-class TodoListTileOverlay extends StatelessWidget {
-  const TodoListTileOverlay({
-    super.key,
-    required this.allowGestureKey,
-    required this.onTapOutside,
-  });
-
-  /// Элемент, на который допускается нажатие
-  final GlobalKey allowGestureKey;
-  final VoidCallback onTapOutside;
-
-  @override
-  Widget build(BuildContext context) {
-    return ConditionallyAbsorbPointer(
-      absorbingCallback: (position) {
-        final renderBox =
-            allowGestureKey.currentContext?.findRenderObject() as RenderBox?;
-        if (renderBox == null) {
-          return false;
-        }
-        final elementRect =
-            renderBox.localToGlobal(Offset.zero) & renderBox.size;
-        if (elementRect.contains(position)) {
-          return false;
-        }
-        return true;
-      },
-      onTap: onTapOutside,
     );
   }
 }

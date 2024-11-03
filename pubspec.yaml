@@ -14,8 +14,13 @@ dependencies:
   google_fonts: ^6.2.0
   infinite_listview: ^1.1.0
   intl: ^0.19.0
-  drift: ^2.21.0
-  drift_flutter: ^0.1.0
+  isar:
+    hosted: https://pub.isar-community.dev
+    version: ^3.0.0
+  isar_flutter_libs:
+    hosted: https://pub.isar-community.dev
+    version: ^3.0.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
@@ -23,7 +28,9 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   build_runner: ^2.4.13
 
-  drift_dev: ^2.21.0
+  isar_generator:
+    hosted: https://pub.isar-community.dev
+    version: ^3.0.0
 
 flutter:
   uses-material-design: true
