@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +8,7 @@ import 'package:path_provider/path_provider.dart' as pp;
 
 import 'src/data.dart';
 import 'src/presentation.dart';
+import 'src/services.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +20,14 @@ Future<void> main() async {
     [TodoSchema],
     directory: dir.path,
   );
-  runApp(MyApp(isar: isar));
+  runApp(
+    ProviderScope(
+      overrides: [
+        isarProvider.overrideWithValue(isar),
+      ],
+      child: MyApp(isar: isar),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

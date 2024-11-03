@@ -1,16 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:infinite_listview/infinite_listview.dart';
 import 'package:intl/intl.dart';
-import 'package:isar/isar.dart';
 
-import '../../../../../main.dart';
 import '../../../../data.dart';
-import '../../../constants.dart';
-import '../../../functions.dart';
-import '../../../widgets.dart';
+import '../../../../domain.dart';
+import '../../../../presentation.dart';
+import '../../../../services.dart';
 
 const _dayColor = Colors.black;
 const _dayColorS = Colors.white;
@@ -25,28 +24,22 @@ const _taskCircleColor = Color(0xFFEDEBF9);
 const _taskCircleColorCompleted = Color(0xFFCECECE);
 
 final _dayFormat = DateFormat('dd.MM.yyyy');
-final _keyFormat = DateFormat('dd.MM.yyyy');
-
-String _formatKey(DateTime dateTime) => _keyFormat.format(dateTime);
 
 DateTime _normalizeDateTime(DateTime dateTime) =>
     DateTime(dateTime.year, dateTime.month, dateTime.day);
 
-class TodoPage extends StatefulWidget {
+class TodoPage extends ConsumerStatefulWidget {
   const TodoPage({super.key});
 
   @override
-  State<TodoPage> createState() => _TodoPageState();
+  ConsumerState<TodoPage> createState() => _TodoPageState();
 }
 
-class _TodoPageState extends State<TodoPage> {
+class _TodoPageState extends ConsumerState<TodoPage> {
   final _textEditingController = TextEditingController();
   final _focusNode = FocusNode();
 
   late DateTime _selected;
-
-  final _todos = <String, List<Todo>>{};
-  final _loadings = <String>[];
 
   final _pointerKey = GlobalKey();
 
@@ -56,53 +49,27 @@ class _TodoPageState extends State<TodoPage> {
 
   OverlayEntry? _entry;
 
-  Isar get isar => context.findAncestorWidgetOfExactType<MyApp>()!.isar;
-
   @override
   void initState() {
     super.initState();
     _selected = _normalizeDateTime(DateTime.now());
   }
 
-  Future<void> _loadTodos(DateTime dateTime) async {
-    dateTime = _normalizeDateTime(dateTime);
-    final key = _formatKey(dateTime);
-    if (_todos.containsKey(key) || _loadings.contains(key)) {
-      return;
-    }
-    final todos = await isar.todos
-        .where()
-        .createdDateEqualTo(DateFormat('yyyy-MM-dd').format(dateTime))
-        .findAll();
-    setState(() {
-      _loadings.remove(key);
-      _todos[key] = todos;
-    });
-  }
+  TodosProvider _todosProvider(DateTime date) =>
+      todosProvider(Todo.dateFormat.format(date));
+
+  TodosNotifier _todosNotifier(DateTime date) =>
+      ref.read(_todosProvider(date).notifier);
+
+  TodosState _todos(DateTime date) => ref.watch(_todosProvider(date));
 
   Future<void> _addTodo(String value) async {
     _entry?.remove();
     _entry = null;
-    value = value.trim();
-    if (value.isNotEmpty) {
-      final todo = Todo.create(description: value);
-      await isar.writeTxn(() => isar.todos.put(todo));
-      setState(() => _todos[_formatKey(_selected)]!.add(todo));
-    }
+    await _todosNotifier(_selected).createTodo(value);
     setState(() => _editMode = false);
     _focusNode.unfocus();
     _textEditingController.clear();
-  }
-
-  Future<void> _deleteTodo(Todo todo) async {
-    final key = _formatKey(_selected);
-    await isar.writeTxn(() => isar.todos.delete(todo.id));
-    setState(() => _todos[key]!.remove(todo));
-  }
-
-  Future<void> _setCompleted(Todo item) async {
-    setState(() => item.completed = true);
-    await isar.writeTxn(() => isar.todos.put(item));
   }
 
   void _onBeginEdit() {
@@ -125,123 +92,135 @@ class _TodoPageState extends State<TodoPage> {
   Widget build(BuildContext context) {
     const borderRadius = BorderRadius.all(Radius.circular(30));
 
-    final result = ClipRRect(
-      borderRadius: borderRadius,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          borderRadius: borderRadius,
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x26034714),
-              offset: Offset(0, 4),
-              blurRadius: 8,
-              blurStyle: BlurStyle.outer,
-            ),
-          ],
+    final result = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DatesCarousel(
+          selected: _selected,
+          onSelectedChanged: (v) => setState(() => _selected = v),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DatesCarousel(
-              selected: _selected,
-              onSelectedChanged: (v) => setState(() => _selected = v),
-              loadTodoCallback: _loadTodos,
+        Flexible(
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              color: Colors.white,
             ),
-            Flexible(
-              child: DecoratedBox(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Gap(8),
-                    if (!_todos.containsKey(_formatKey(_selected))) ...[
-                      const Gap(6),
-                      const Center(child: CircularProgressIndicator()),
-                    ] else ...[
-                      Text(
-                        'План на день ${_dayFormat.format(_selected)}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w300,
-                          height: 24 / 14,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const Gap(20),
-                      Flexible(
-                        child: CustomScrollView(
-                          key: _pointerKey,
-                          shrinkWrap: true,
-                          slivers: [
-                            if (_todos[_formatKey(_selected)] case final todos?)
-                              SliverList.builder(
-                                itemCount: todos.length,
-                                itemBuilder: (context, index) {
-                                  final todo = todos[index];
-                                  return TodoListTile(
-                                    key: Key('todo-${todo.id}'),
-                                    contents: todo.description,
-                                    completed: todo.completed,
-                                    selected: _selectedTodoId == todo.id,
-                                    onTap: () {
-                                      if (_editMode) {
-                                        unawaited(
-                                          _addTodo(_textEditingController.text),
-                                        );
-                                      } else {
-                                        setState(
-                                          () {
-                                            if (_selectedTodoId == todo.id) {
-                                              _selectedTodoId = null;
-                                            } else {
-                                              _selectedTodoId = todo.id;
-                                            }
-                                          },
-                                        );
-                                      }
-                                    },
-                                    onLongPress: () async =>
-                                        _setCompleted(todo),
-                                    onDelete: () =>
-                                        unawaited(_deleteTodo(todo)),
-                                  );
-                                },
-                              ),
-                            SliverToBoxAdapter(
-                              child: TodoListTile.create(
-                                contents: 'Новая задача',
-                                onSubmit: _addTodo,
-                                controller: _textEditingController,
-                                focusNode: _focusNode,
-                                onTap: _onBeginEdit,
-                                editMode: _editMode,
-                              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Gap(8),
+                Flexible(
+                  child: _todos(_selected).maybeWhen(
+                    data: (todos) {
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          DayLabel(dateTime: _selected),
+                          const Gap(20),
+                          Flexible(
+                            child: CustomScrollView(
+                              key: _pointerKey,
+                              shrinkWrap: true,
+                              slivers: [
+                                SliverList.builder(
+                                  itemCount: todos.length,
+                                  itemBuilder: (context, index) {
+                                    final todo = todos[index];
+                                    return TodoListTile(
+                                      key: Key('todo-${todo.id}'),
+                                      contents: todo.description,
+                                      completed: todo.completed,
+                                      selected: _selectedTodoId == todo.id,
+                                      onTap: () {
+                                        if (_editMode) {
+                                          unawaited(
+                                            _addTodo(
+                                              _textEditingController.text,
+                                            ),
+                                          );
+                                        } else {
+                                          setState(
+                                            () {
+                                              if (_selectedTodoId == todo.id) {
+                                                _selectedTodoId = null;
+                                              } else {
+                                                _selectedTodoId = todo.id;
+                                              }
+                                            },
+                                          );
+                                        }
+                                      },
+                                      onLongPress: () async =>
+                                          _todosNotifier(_selected).updateTodo(
+                                        todo.id,
+                                        completed: true,
+                                      ),
+                                      onDelete: () => unawaited(
+                                        _todosNotifier(_selected)
+                                            .deleteTodo(todo.id),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                SliverToBoxAdapter(
+                                  child: TodoListTile.create(
+                                    contents: 'Новая задача',
+                                    onSubmit: _addTodo,
+                                    controller: _textEditingController,
+                                    focusNode: _focusNode,
+                                    onTap: _onBeginEdit,
+                                    editMode: _editMode,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const Gap(14),
-                  ],
+                          ),
+                        ],
+                      );
+                    },
+                    orElse: () {
+                      return const Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Gap(6),
+                          Center(child: CircularProgressIndicator()),
+                        ],
+                      );
+                    },
+                  ),
                 ),
-              ),
+                const Gap(14),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
 
     return Padding(
       padding: pagePadding,
       child: Align(
         alignment: Alignment.topCenter,
-        child: result,
+        child: ClipRRect(
+          borderRadius: borderRadius,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              borderRadius: borderRadius,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x26034714),
+                  offset: Offset(0, 4),
+                  blurRadius: 8,
+                  blurStyle: BlurStyle.outer,
+                ),
+              ],
+            ),
+            child: result,
+          ),
+        ),
       ),
     );
   }
@@ -411,12 +390,10 @@ class DatesCarousel extends StatelessWidget {
     super.key,
     required this.selected,
     required this.onSelectedChanged,
-    required this.loadTodoCallback,
   });
 
   final DateTime selected;
   final ValueChanged<DateTime> onSelectedChanged;
-  final void Function(DateTime dateTime) loadTodoCallback;
 
   DateTime _getDateTimeByIndex(int index) {
     if (!index.isNegative) {
@@ -439,8 +416,6 @@ class DatesCarousel extends StatelessWidget {
         itemBuilder: (context, index) {
           final date = _getDateTimeByIndex(index);
           final isSelected = _isSameDay(selected, date);
-
-          loadTodoCallback(date);
 
           return GestureDetector(
             onTap: () => onSelectedChanged(date),
@@ -503,6 +478,29 @@ class DatesCarousel extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class DayLabel extends StatelessWidget {
+  const DayLabel({
+    super.key,
+    required this.dateTime,
+  });
+
+  final DateTime dateTime;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'План на день ${_dayFormat.format(dateTime)}',
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w300,
+        height: 24 / 14,
+        color: Colors.black,
       ),
     );
   }

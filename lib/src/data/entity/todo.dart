@@ -15,12 +15,15 @@ class Todo {
   factory Todo.create({
     required String description,
     bool completed = false,
+    DateTime? createdTime,
   }) =>
       Todo(
         description: description,
         completed: completed,
-        createdTime: DateTime.now(),
+        createdTime: createdTime ?? DateTime.now(),
       );
+
+  static final dateFormat = DateFormat('dd.MM.yyyy');
 
   Id id;
 
@@ -31,5 +34,12 @@ class Todo {
   DateTime createdTime;
 
   @Index()
-  String get createdDate => DateFormat('yyyy-MM-dd').format(createdTime);
+  String get createdDate => dateFormat.format(createdTime);
+}
+
+extension TodoQueryWhereMy on QueryBuilder<Todo, Todo, QWhereClause> {
+  QueryBuilder<Todo, Todo, QAfterWhereClause> createdDateEqualToDateTime(
+    DateTime dateTime,
+  ) =>
+      createdDateEqualTo(Todo.dateFormat.format(dateTime));
 }
