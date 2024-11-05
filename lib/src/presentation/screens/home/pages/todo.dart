@@ -23,11 +23,6 @@ const _taskTitleColorCompleted = Color(0xFFCECECE);
 const _taskCircleColor = Color(0xFFEDEBF9);
 const _taskCircleColorCompleted = Color(0xFFCECECE);
 
-final _dayFormat = DateFormat('dd.MM.yyyy');
-
-DateTime _normalizeDateTime(DateTime dateTime) =>
-    DateTime(dateTime.year, dateTime.month, dateTime.day);
-
 class TodoPage extends ConsumerStatefulWidget {
   const TodoPage({super.key});
 
@@ -52,7 +47,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
   @override
   void initState() {
     super.initState();
-    _selected = _normalizeDateTime(DateTime.now());
+    _selected = DateTime.now();
   }
 
   TodosProvider _todosProvider(DateTime date) =>
@@ -494,7 +489,7 @@ class DayLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'План на день ${_dayFormat.format(dateTime)}',
+      'План на день ${DateFormat('dd.MM.yyyy').format(dateTime)}',
       textAlign: TextAlign.center,
       style: const TextStyle(
         fontSize: 14,
