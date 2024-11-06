@@ -34,9 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _jumpToPage(int page) {
-    _pageController.jumpToPage(page);
-  }
+  void _jumpToPage(int page) => _pageController.jumpToPage(page);
 
   @override
   Widget build(BuildContext context) {

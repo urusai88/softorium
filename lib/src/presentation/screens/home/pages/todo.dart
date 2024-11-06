@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:infinite_listview/infinite_listview.dart';
 import 'package:intl/intl.dart';
+import 'package:time/time.dart';
 
 import '../../../../data.dart';
 import '../../../../domain.dart';
@@ -390,17 +391,6 @@ class DatesCarousel extends StatelessWidget {
   final DateTime selected;
   final ValueChanged<DateTime> onSelectedChanged;
 
-  DateTime _getDateTimeByIndex(int index) {
-    if (!index.isNegative) {
-      return DateTime.now().add(Duration(days: index));
-    } else {
-      return DateTime.now().subtract(Duration(days: index.abs()));
-    }
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -409,70 +399,92 @@ class DatesCarousel extends StatelessWidget {
       child: InfiniteListView.builder(
         scrollDirection: Axis.horizontal,
         itemBuilder: (context, index) {
-          final date = _getDateTimeByIndex(index);
-          final isSelected = _isSameDay(selected, date);
-
-          return GestureDetector(
+          final date = DateTime.now() + index.days;
+          return DayListTile(
+            dateTime: date,
+            selected: selected.isAtSameDayAs(date),
             onTap: () => onSelectedChanged(date),
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-              width: 40,
-              child: MyAnimatedColor(
-                duration: animationDuration,
-                color: isSelected ? _backColorS : _backColor,
-                builder: (context, value, child) {
-                  return DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: value,
-                      borderRadius: const BorderRadius.all(Radius.circular(24)),
-                    ),
-                    child: child,
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Column(
-                    children: [
-                      if (_isSameDay(DateTime.now(), date))
-                        const Expanded(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(0xFFD9D9D9),
-                            ),
-                            child: SizedBox.square(dimension: 4),
-                          ),
-                        )
-                      else
-                        const Spacer(),
-                      AnimatedDefaultTextStyle(
-                        duration: animationDuration,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 16 / 14,
-                          color: isSelected ? _dayColorS : _dayColor,
-                        ),
-                        child: Text('${date.day}'),
-                      ),
-                      const Gap(4),
-                      AnimatedDefaultTextStyle(
-                        duration: animationDuration,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 16 / 14,
-                          color: isSelected ? _dayTextColorS : _dayTextColor,
-                        ),
-                        child: Text(
-                          capitalizeWord(DateFormat('E').format(date)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           );
         },
+      ),
+    );
+  }
+}
+
+class DayListTile extends StatelessWidget {
+  const DayListTile({
+    super.key,
+    required this.dateTime,
+    required this.selected,
+    this.onTap,
+  });
+
+  final DateTime dateTime;
+  final bool selected;
+  final GestureTapCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final result = MyAnimatedColor(
+      duration: animationDuration,
+      color: selected ? _backColorS : _backColor,
+      builder: (context, value, child) {
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: value,
+            borderRadius: const BorderRadius.all(Radius.circular(24)),
+          ),
+          child: child,
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Column(
+          children: [
+            if (DateTime.now().isAtSameDayAs(dateTime))
+              const Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFD9D9D9),
+                  ),
+                  child: SizedBox.square(dimension: 4),
+                ),
+              )
+            else
+              const Spacer(),
+            AnimatedDefaultTextStyle(
+              duration: animationDuration,
+              style: TextStyle(
+                fontSize: 14,
+                height: 16 / 14,
+                color: selected ? _dayColorS : _dayColor,
+              ),
+              child: Text('${dateTime.day}'),
+            ),
+            const Gap(4),
+            AnimatedDefaultTextStyle(
+              duration: animationDuration,
+              style: TextStyle(
+                fontSize: 14,
+                height: 16 / 14,
+                color: selected ? _dayTextColorS : _dayTextColor,
+              ),
+              child: Text(
+                capitalizeWord(DateFormat('E').format(dateTime)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+        child: result,
       ),
     );
   }

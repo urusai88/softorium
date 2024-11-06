@@ -654,7 +654,7 @@ packages:
     source: hosted
     version: "0.7.2"
   time:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: time
       sha256: ad8e018a6c9db36cb917a031853a1aae49467a93e0d464683e029537d848c221

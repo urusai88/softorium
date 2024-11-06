@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/find_locale.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart' as pp;
@@ -12,14 +13,15 @@ import 'src/services.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Intl.defaultLocale = await findSystemLocale();
   await initializeDateFormatting();
-  Intl.defaultLocale = 'ru_RU';
 
   final dir = await pp.getApplicationDocumentsDirectory();
   final isar = await Isar.open(
     [TodoSchema],
     directory: dir.path,
   );
+
   runApp(
     ProviderScope(
       overrides: [
