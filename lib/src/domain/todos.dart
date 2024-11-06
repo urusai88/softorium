@@ -43,7 +43,7 @@ class TodosNotifier extends FamilyAsyncNotifier<List<Todo>, String> {
   }
 
   Future<Todo?> updateTodo(int id, {bool? completed}) async {
-    final todo = await _todos.filter().idEqualTo(id).findFirst();
+    final todo = await _todos.where().idEqualTo(id).findFirst();
     if (todo == null) {
       return null;
     }
