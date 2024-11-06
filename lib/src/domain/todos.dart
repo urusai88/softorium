@@ -12,9 +12,6 @@ typedef TodosProvider
 typedef TodosState = AsyncValue<List<Todo>>;
 
 class TodosNotifier extends FamilyAsyncNotifier<List<Todo>, String> {
-  AsyncNotifierFamilyProvider<TodosNotifier, List<Todo>, String> get provider =>
-      todosProvider('');
-
   Isar get _isar => ref.read(isarProvider);
 
   IsarCollection<Todo> get _todos => ref.read(isarProvider).todos;
