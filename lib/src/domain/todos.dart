@@ -18,6 +18,7 @@ class TodosNotifier extends FamilyAsyncNotifier<List<Todo>, String> {
 
   @override
   Future<List<Todo>> build(String arg) async {
+    assert(Todo.dateFormat.tryParse(arg) != null);
     final subscription = _todos
         .where()
         .createdDateEqualTo(arg)
