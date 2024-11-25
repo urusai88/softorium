@@ -10,7 +10,6 @@ import 'package:time/time.dart';
 import '../../../../data.dart';
 import '../../../../domain.dart';
 import '../../../../presentation.dart';
-import '../../../../services.dart';
 
 const _dayColor = Colors.black;
 const _dayColorS = Colors.white;
@@ -23,6 +22,49 @@ const _taskTitleColor = Colors.black;
 const _taskTitleColorCompleted = Color(0xFFCECECE);
 const _taskCircleColor = Color(0xFFEDEBF9);
 const _taskCircleColorCompleted = Color(0xFFCECECE);
+
+typedef _TodosPageProvider = AsyncNotifierFamilyProvider<TodosPageNotifier,
+    List<TodoPageTodo>, String>;
+
+typedef _TodosPageState = AsyncValue<List<TodoPageTodo>>;
+
+class TodoPageTodo {
+  const TodoPageTodo({
+    required this.todo,
+    this.removing = false,
+  });
+
+  final Todo todo;
+  final bool removing;
+
+  TodoPageTodo withRemoving() => TodoPageTodo(todo: todo, removing: true);
+}
+
+class TodosPageNotifier
+    extends FamilyAsyncNotifier<List<TodoPageTodo>, String> {
+  @override
+  Future<List<TodoPageTodo>> build(String arg) async {
+    final data = await ref.watch(todosProvider(arg).future);
+    return data.map((e) => TodoPageTodo(todo: e)).toList();
+  }
+
+  Future<void> deleteTodo(int id) async {
+    if (state case AsyncData(value: final value)) {
+      final index = value.indexWhere((e) => e.todo.id == id);
+      if (index == -1) {
+        return;
+      }
+      final next = List.of(value);
+      next[index] = value[index].withRemoving();
+      state = AsyncData(next);
+    }
+  }
+}
+
+final todosPageProvider =
+    AsyncNotifierProviderFamily<TodosPageNotifier, List<TodoPageTodo>, String>(
+  TodosPageNotifier.new,
+);
 
 class TodoPage extends ConsumerStatefulWidget {
   const TodoPage({super.key});
@@ -57,7 +99,13 @@ class _TodoPageState extends ConsumerState<TodoPage> {
   TodosNotifier _todosNotifier(DateTime date) =>
       ref.read(_todosProvider(date).notifier);
 
-  TodosState _todos(DateTime date) => ref.watch(_todosProvider(date));
+  _TodosPageProvider _todosPageProvider(DateTime date) =>
+      todosPageProvider(Todo.dateFormat.format(date));
+
+  TodosPageNotifier _todosPageNotifier(DateTime date) =>
+      ref.read(_todosPageProvider(date).notifier);
+
+  _TodosPageState _todos(DateTime date) => ref.watch(_todosPageProvider(date));
 
   Future<void> _addTodo(String value) async {
     _entry?.remove();
@@ -102,7 +150,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
             decoration: const BoxDecoration(
               color: Colors.white,
             ),
-            child: switch (ref.watch(_todosProvider(_selected))) {
+            child: switch (ref.watch(_todosPageProvider(_selected))) {
               AsyncData(value: final todos) => Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -118,37 +166,43 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                             itemCount: todos.length,
                             itemBuilder: (context, index) {
                               final todo = todos[index];
-                              return TodoListTile(
-                                key: Key('todo-${todo.id}'),
-                                contents: todo.description,
-                                completed: todo.completed,
-                                selected: _selectedTodoId == todo.id,
-                                onTap: () {
-                                  if (_editMode) {
-                                    unawaited(
-                                      _addTodo(
-                                        _textEditingController.text,
-                                      ),
-                                    );
-                                  } else {
-                                    setState(
-                                      () {
-                                        if (_selectedTodoId == todo.id) {
-                                          _selectedTodoId = null;
-                                        } else {
-                                          _selectedTodoId = todo.id;
-                                        }
-                                      },
-                                    );
-                                  }
-                                },
-                                onLongPress: () async =>
-                                    _todosNotifier(_selected).updateTodo(
-                                  todo.id,
-                                  completed: true,
-                                ),
-                                onDelete: () => unawaited(
-                                  _todosNotifier(_selected).deleteTodo(todo.id),
+                              return _RemovingTile(
+                                removing: todo.removing,
+                                onRemoved: () => unawaited(() async {}()
+                                    // _todosNotifier(_selected)
+                                    //     .deleteTodo(todo.todo.id),
+                                    ),
+                                child: TodoListTile(
+                                  key: Key('todo-${todo.todo.id}'),
+                                  contents: todo.todo.description,
+                                  completed: todo.todo.completed,
+                                  selected: _selectedTodoId == todo.todo.id,
+                                  onTap: () {
+                                    if (_editMode) {
+                                      unawaited(
+                                        _addTodo(_textEditingController.text),
+                                      );
+                                    } else {
+                                      setState(
+                                        () {
+                                          if (_selectedTodoId == todo.todo.id) {
+                                            _selectedTodoId = null;
+                                          } else {
+                                            _selectedTodoId = todo.todo.id;
+                                          }
+                                        },
+                                      );
+                                    }
+                                  },
+                                  onLongPress: () async =>
+                                      _todosNotifier(_selected).updateTodo(
+                                    todo.todo.id,
+                                    completed: true,
+                                  ),
+                                  onDelete: () => unawaited(
+                                    _todosPageNotifier(_selected)
+                                        .deleteTodo(todo.todo.id),
+                                  ),
                                 ),
                               );
                             },
@@ -168,7 +222,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                     ),
                   ],
                 ),
-              AsyncValue<List<Todo>>() => const Padding(
+              AsyncValue<dynamic>() => const Padding(
                   padding: EdgeInsets.only(top: 6),
                   child: Center(child: CircularProgressIndicator()),
                 ),
@@ -489,6 +543,81 @@ class DayLabel extends StatelessWidget {
         height: 24 / 14,
         color: Colors.black,
       ),
+    );
+  }
+}
+
+class _RemovingTile extends StatefulWidget {
+  const _RemovingTile({
+    super.key,
+    required this.removing,
+    required this.onRemoved,
+    required this.child,
+  });
+
+  final bool removing;
+  final VoidCallback onRemoved;
+  final Widget child;
+
+  @override
+  State<_RemovingTile> createState() => _RemovingTileState();
+}
+
+class _RemovingTileState extends State<_RemovingTile>
+    with SingleTickerProviderStateMixin {
+  late final _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 300),
+  );
+
+  late final Animation<double> opacity;
+  late final Animation<Offset> slide;
+  late final Animation<double> size;
+
+  @override
+  void initState() {
+    super.initState();
+    opacity = Tween<double>(begin: 1, end: 0).animate(_controller);
+    slide = Tween<Offset>(begin: Offset.zero, end: const Offset(-1, 0)).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.5, 0.75, curve: Curves.ease),
+      ),
+    );
+    size = Tween<double>(begin: 1, end: 0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.675, 1),
+      ),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _RemovingTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.removing && !_controller.isAnimating) {
+      unawaited(_controller.forward().whenComplete(widget.onRemoved));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return SlideTransition(
+          position: slide,
+          child: Opacity(
+            opacity: opacity.value,
+            child: SizeTransition(
+              axis: Axis.vertical,
+              sizeFactor: size,
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: widget.child,
     );
   }
 }

@@ -6,7 +6,4 @@ import 'domain/todos.dart';
 
 final isarProvider = Provider<Isar>((_) => throw UnimplementedError());
 
-final todosProvider =
-    AsyncNotifierProviderFamily<TodosNotifier, List<Todo>, String>(
-  TodosNotifier.new,
-);
+

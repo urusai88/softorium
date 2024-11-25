@@ -11,6 +11,11 @@ typedef TodosProvider
 
 typedef TodosState = AsyncValue<List<Todo>>;
 
+final todosProvider =
+    AsyncNotifierProviderFamily<TodosNotifier, List<Todo>, String>(
+  TodosNotifier.new,
+);
+
 class TodosNotifier extends FamilyAsyncNotifier<List<Todo>, String> {
   Isar get _isar => ref.read(isarProvider);
 
