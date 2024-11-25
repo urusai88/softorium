@@ -25,11 +25,6 @@ const _taskTitleColorCompleted = Color(0xFFCECECE);
 const _taskCircleColor = Color(0xFFEDEBF9);
 const _taskCircleColorCompleted = Color(0xFFCECECE);
 
-typedef _TodosPageProvider = AsyncNotifierFamilyProvider<TodosPageNotifier,
-    List<TodoPageTodo>, String>;
-
-typedef _TodosPageState = AsyncValue<List<TodoPageTodo>>;
-
 class TodoPageTodo {
   const TodoPageTodo({
     required this.todo,

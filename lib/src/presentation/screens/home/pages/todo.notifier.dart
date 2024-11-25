@@ -1,5 +1,10 @@
 part of 'todo.dart';
 
+typedef _TodosPageProvider = AsyncNotifierFamilyProvider<TodosPageNotifier,
+    List<TodoPageTodo>, String>;
+
+typedef _TodosPageState = AsyncValue<List<TodoPageTodo>>;
+
 class TodosPageNotifier
     extends FamilyAsyncNotifier<List<TodoPageTodo>, String> {
   @override
