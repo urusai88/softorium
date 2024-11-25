@@ -103,6 +103,26 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     Overlay.of(context).insert(_entry!);
   }
 
+  void _onTap(int todoId) {
+    if (_editMode) {
+      unawaited(_addTodo(_textEditingController.text));
+    } else {
+      setState(
+        () => _selectedTodoId =
+            _selectedTodoId != todoId ? _selectedTodoId : null,
+      );
+    }
+  }
+
+  void _onLongPress(int todoId) =>
+      unawaited(_todosNotifier(_selected).updateTodo(todoId, completed: true));
+
+  void _onDelete(int todoId) =>
+      unawaited(_todosPageNotifier(_selected).deleteTodo(todoId));
+
+  void _onRemoved(int todoId) =>
+      unawaited(_todosNotifier(_selected).deleteTodo(todoId));
+
   @override
   Widget build(BuildContext context) {
     const borderRadius = BorderRadius.all(Radius.circular(30));
@@ -144,42 +164,16 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                 final todo = todos[index];
                                 return _RemovingTile(
                                   removing: todo.removing,
-                                  onRemoved: () => unawaited(
-                                    _todosNotifier(_selected)
-                                        .deleteTodo(todo.todo.id),
-                                  ),
+                                  onRemoved: () => _onRemoved(todo.todo.id),
                                   child: TodoListTile(
                                     key: Key('todo-${todo.todo.id}'),
                                     contents: todo.todo.description,
                                     completed: todo.todo.completed,
                                     selected: _selectedTodoId == todo.todo.id,
-                                    onTap: () {
-                                      if (_editMode) {
-                                        unawaited(
-                                          _addTodo(_textEditingController.text),
-                                        );
-                                      } else {
-                                        setState(
-                                          () {
-                                            if (_selectedTodoId ==
-                                                todo.todo.id) {
-                                              _selectedTodoId = null;
-                                            } else {
-                                              _selectedTodoId = todo.todo.id;
-                                            }
-                                          },
-                                        );
-                                      }
-                                    },
-                                    onLongPress: () async =>
-                                        _todosNotifier(_selected).updateTodo(
-                                      todo.todo.id,
-                                      completed: true,
-                                    ),
-                                    onDelete: () => unawaited(
-                                      _todosPageNotifier(_selected)
-                                          .deleteTodo(todo.todo.id),
-                                    ),
+                                    onTap: () => _onTap(todo.todo.id),
+                                    onLongPress: () =>
+                                        _onLongPress(todo.todo.id),
+                                    onDelete: () => _onDelete(todo.todo.id),
                                   ),
                                 );
                               },
