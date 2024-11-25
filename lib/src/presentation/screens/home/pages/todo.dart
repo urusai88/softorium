@@ -121,83 +121,85 @@ class _TodoPageState extends ConsumerState<TodoPage> {
             decoration: const BoxDecoration(
               color: Colors.white,
             ),
-            child: switch (ref.watch(_todosPageProvider(_selected))) {
-              AsyncValue(value: final todos) when todos != null => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    DayLabel(dateTime: _selected),
-                    const Gap(20),
-                    Flexible(
-                      child: CustomScrollView(
-                        key: _pointerKey,
-                        shrinkWrap: true,
-                        slivers: [
-                          SliverList.builder(
-                            itemCount: todos.length,
-                            itemBuilder: (context, index) {
-                              final todo = todos[index];
-                              return _RemovingTile(
-                                removing: todo.removing,
-                                onRemoved: () => unawaited(
-                                  _todosNotifier(_selected)
-                                      .deleteTodo(todo.todo.id),
-                                ),
-                                child: TodoListTile(
-                                  key: Key('todo-${todo.todo.id}'),
-                                  contents: todo.todo.description,
-                                  completed: todo.todo.completed,
-                                  selected: _selectedTodoId == todo.todo.id,
-                                  onTap: () {
-                                    if (_editMode) {
-                                      unawaited(
-                                        _addTodo(_textEditingController.text),
-                                      );
-                                    } else {
-                                      setState(
-                                        () {
-                                          if (_selectedTodoId == todo.todo.id) {
-                                            _selectedTodoId = null;
-                                          } else {
-                                            _selectedTodoId = todo.todo.id;
-                                          }
-                                        },
-                                      );
-                                    }
-                                  },
-                                  onLongPress: () async =>
-                                      _todosNotifier(_selected).updateTodo(
-                                    todo.todo.id,
-                                    completed: true,
-                                  ),
-                                  onDelete: () => unawaited(
-                                    _todosPageNotifier(_selected)
+            child: ref.watch(_todosPageProvider(_selected)).maybeWhen(
+                  skipLoadingOnReload: true,
+                  orElse: () => const Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  data: (todos) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      DayLabel(dateTime: _selected),
+                      const Gap(20),
+                      Flexible(
+                        child: CustomScrollView(
+                          key: _pointerKey,
+                          shrinkWrap: true,
+                          slivers: [
+                            SliverList.builder(
+                              itemCount: todos.length,
+                              itemBuilder: (context, index) {
+                                final todo = todos[index];
+                                return _RemovingTile(
+                                  removing: todo.removing,
+                                  onRemoved: () => unawaited(
+                                    _todosNotifier(_selected)
                                         .deleteTodo(todo.todo.id),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                          SliverToBoxAdapter(
-                            child: TodoListTile.create(
-                              contents: 'Новая задача',
-                              onSubmit: _addTodo,
-                              controller: _textEditingController,
-                              focusNode: _focusNode,
-                              onTap: _onBeginEdit,
-                              editMode: _editMode,
+                                  child: TodoListTile(
+                                    key: Key('todo-${todo.todo.id}'),
+                                    contents: todo.todo.description,
+                                    completed: todo.todo.completed,
+                                    selected: _selectedTodoId == todo.todo.id,
+                                    onTap: () {
+                                      if (_editMode) {
+                                        unawaited(
+                                          _addTodo(_textEditingController.text),
+                                        );
+                                      } else {
+                                        setState(
+                                          () {
+                                            if (_selectedTodoId ==
+                                                todo.todo.id) {
+                                              _selectedTodoId = null;
+                                            } else {
+                                              _selectedTodoId = todo.todo.id;
+                                            }
+                                          },
+                                        );
+                                      }
+                                    },
+                                    onLongPress: () async =>
+                                        _todosNotifier(_selected).updateTodo(
+                                      todo.todo.id,
+                                      completed: true,
+                                    ),
+                                    onDelete: () => unawaited(
+                                      _todosPageNotifier(_selected)
+                                          .deleteTodo(todo.todo.id),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                          ),
-                        ],
+                            SliverToBoxAdapter(
+                              child: TodoListTile.create(
+                                contents: 'Новая задача',
+                                onSubmit: _addTodo,
+                                controller: _textEditingController,
+                                focusNode: _focusNode,
+                                onTap: _onBeginEdit,
+                                editMode: _editMode,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              AsyncValue<dynamic>() => const Padding(
-                  padding: EdgeInsets.only(top: 6),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-            },
           ),
         ),
       ],
