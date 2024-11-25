@@ -97,99 +97,82 @@ class _TodoPageState extends ConsumerState<TodoPage> {
           onSelectedChanged: (v) => setState(() => _selected = v),
         ),
         Flexible(
-          child: DecoratedBox(
+          child: Container(
+            padding: const EdgeInsets.only(top: 8, bottom: 14),
             decoration: const BoxDecoration(
               color: Colors.white,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Gap(8),
-                Flexible(
-                  child: _todos(_selected).maybeWhen(
-                    data: (todos) {
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          DayLabel(dateTime: _selected),
-                          const Gap(20),
-                          Flexible(
-                            child: CustomScrollView(
-                              key: _pointerKey,
-                              shrinkWrap: true,
-                              slivers: [
-                                SliverList.builder(
-                                  itemCount: todos.length,
-                                  itemBuilder: (context, index) {
-                                    final todo = todos[index];
-                                    return TodoListTile(
-                                      key: Key('todo-${todo.id}'),
-                                      contents: todo.description,
-                                      completed: todo.completed,
-                                      selected: _selectedTodoId == todo.id,
-                                      onTap: () {
-                                        if (_editMode) {
-                                          unawaited(
-                                            _addTodo(
-                                              _textEditingController.text,
-                                            ),
-                                          );
-                                        } else {
-                                          setState(
-                                            () {
-                                              if (_selectedTodoId == todo.id) {
-                                                _selectedTodoId = null;
-                                              } else {
-                                                _selectedTodoId = todo.id;
-                                              }
-                                            },
-                                          );
-                                        }
-                                      },
-                                      onLongPress: () async =>
-                                          _todosNotifier(_selected).updateTodo(
-                                        todo.id,
-                                        completed: true,
-                                      ),
-                                      onDelete: () => unawaited(
-                                        _todosNotifier(_selected)
-                                            .deleteTodo(todo.id),
+            child: switch (ref.watch(_todosProvider(_selected))) {
+              AsyncData(value: final todos) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DayLabel(dateTime: _selected),
+                    const Gap(20),
+                    Flexible(
+                      child: CustomScrollView(
+                        key: _pointerKey,
+                        shrinkWrap: true,
+                        slivers: [
+                          SliverList.builder(
+                            itemCount: todos.length,
+                            itemBuilder: (context, index) {
+                              final todo = todos[index];
+                              return TodoListTile(
+                                key: Key('todo-${todo.id}'),
+                                contents: todo.description,
+                                completed: todo.completed,
+                                selected: _selectedTodoId == todo.id,
+                                onTap: () {
+                                  if (_editMode) {
+                                    unawaited(
+                                      _addTodo(
+                                        _textEditingController.text,
                                       ),
                                     );
-                                  },
+                                  } else {
+                                    setState(
+                                      () {
+                                        if (_selectedTodoId == todo.id) {
+                                          _selectedTodoId = null;
+                                        } else {
+                                          _selectedTodoId = todo.id;
+                                        }
+                                      },
+                                    );
+                                  }
+                                },
+                                onLongPress: () async =>
+                                    _todosNotifier(_selected).updateTodo(
+                                  todo.id,
+                                  completed: true,
                                 ),
-                                SliverToBoxAdapter(
-                                  child: TodoListTile.create(
-                                    contents: 'Новая задача',
-                                    onSubmit: _addTodo,
-                                    controller: _textEditingController,
-                                    focusNode: _focusNode,
-                                    onTap: _onBeginEdit,
-                                    editMode: _editMode,
-                                  ),
+                                onDelete: () => unawaited(
+                                  _todosNotifier(_selected).deleteTodo(todo.id),
                                 ),
-                              ],
+                              );
+                            },
+                          ),
+                          SliverToBoxAdapter(
+                            child: TodoListTile.create(
+                              contents: 'Новая задача',
+                              onSubmit: _addTodo,
+                              controller: _textEditingController,
+                              focusNode: _focusNode,
+                              onTap: _onBeginEdit,
+                              editMode: _editMode,
                             ),
                           ),
                         ],
-                      );
-                    },
-                    orElse: () {
-                      return const Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Gap(6),
-                          Center(child: CircularProgressIndicator()),
-                        ],
-                      );
-                    },
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
-                const Gap(14),
-              ],
-            ),
+              AsyncValue<List<Todo>>() => const Padding(
+                  padding: EdgeInsets.only(top: 6),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+            },
           ),
         ),
       ],
@@ -423,6 +406,18 @@ class DayListTile extends StatelessWidget {
   final bool selected;
   final GestureTapCallback? onTap;
 
+  Widget _animatedText(String text, Color color) {
+    return AnimatedDefaultTextStyle(
+      duration: animationDuration,
+      style: TextStyle(
+        fontSize: 14,
+        height: 16 / 14,
+        color: color,
+      ),
+      child: Text(text),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final result = MyAnimatedColor(
@@ -453,26 +448,11 @@ class DayListTile extends StatelessWidget {
               )
             else
               const Spacer(),
-            AnimatedDefaultTextStyle(
-              duration: animationDuration,
-              style: TextStyle(
-                fontSize: 14,
-                height: 16 / 14,
-                color: selected ? _dayColorS : _dayColor,
-              ),
-              child: Text('${dateTime.day}'),
-            ),
+            _animatedText('${dateTime.day}', selected ? _dayColorS : _dayColor),
             const Gap(4),
-            AnimatedDefaultTextStyle(
-              duration: animationDuration,
-              style: TextStyle(
-                fontSize: 14,
-                height: 16 / 14,
-                color: selected ? _dayTextColorS : _dayTextColor,
-              ),
-              child: Text(
-                capitalizeWord(DateFormat('E').format(dateTime)),
-              ),
+            _animatedText(
+              capitalizeWord(DateFormat('E').format(dateTime)),
+              selected ? _dayTextColorS : _dayTextColor,
             ),
           ],
         ),
