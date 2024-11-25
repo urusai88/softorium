@@ -104,12 +104,12 @@ class _TodoPageState extends ConsumerState<TodoPage> {
   }
 
   void _onTap(int todoId) {
+    print(todoId);
     if (_editMode) {
       unawaited(_addTodo(_textEditingController.text));
     } else {
       setState(
-        () => _selectedTodoId =
-            _selectedTodoId != todoId ? _selectedTodoId : null,
+        () => _selectedTodoId = _selectedTodoId != todoId ? todoId : null,
       );
     }
   }
