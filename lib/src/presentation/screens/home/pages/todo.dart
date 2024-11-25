@@ -11,6 +11,8 @@ import '../../../../data.dart';
 import '../../../../domain.dart';
 import '../../../../presentation.dart';
 
+part 'todo.notifier.dart';
+
 const _dayColor = Colors.black;
 const _dayColorS = Colors.white;
 const _dayTextColor = Color(0xFFAFABC6);
@@ -39,32 +41,6 @@ class TodoPageTodo {
 
   TodoPageTodo withRemoving() => TodoPageTodo(todo: todo, removing: true);
 }
-
-class TodosPageNotifier
-    extends FamilyAsyncNotifier<List<TodoPageTodo>, String> {
-  @override
-  Future<List<TodoPageTodo>> build(String arg) async {
-    final data = await ref.watch(todosProvider(arg).future);
-    return data.map((e) => TodoPageTodo(todo: e)).toList();
-  }
-
-  Future<void> deleteTodo(int id) async {
-    if (state case AsyncData(value: final value)) {
-      final index = value.indexWhere((e) => e.todo.id == id);
-      if (index == -1) {
-        return;
-      }
-      final next = List.of(value);
-      next[index] = value[index].withRemoving();
-      state = AsyncData(next);
-    }
-  }
-}
-
-final todosPageProvider =
-    AsyncNotifierProviderFamily<TodosPageNotifier, List<TodoPageTodo>, String>(
-  TodosPageNotifier.new,
-);
 
 class TodoPage extends ConsumerStatefulWidget {
   const TodoPage({super.key});
@@ -168,10 +144,10 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                               final todo = todos[index];
                               return _RemovingTile(
                                 removing: todo.removing,
-                                onRemoved: () => unawaited(() async {}()
-                                    // _todosNotifier(_selected)
-                                    //     .deleteTodo(todo.todo.id),
-                                    ),
+                                onRemoved: () => unawaited(
+                                  _todosNotifier(_selected)
+                                      .deleteTodo(todo.todo.id),
+                                ),
                                 child: TodoListTile(
                                   key: Key('todo-${todo.todo.id}'),
                                   contents: todo.todo.description,
