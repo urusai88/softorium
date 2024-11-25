@@ -104,7 +104,6 @@ class _TodoPageState extends ConsumerState<TodoPage> {
   }
 
   void _onTap(int todoId) {
-    print(todoId);
     if (_editMode) {
       unawaited(_addTodo(_textEditingController.text));
     } else {
