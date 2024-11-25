@@ -122,7 +122,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
               color: Colors.white,
             ),
             child: switch (ref.watch(_todosPageProvider(_selected))) {
-              AsyncData(value: final todos) => Column(
+              AsyncValue(value: final todos) when todos != null => Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
